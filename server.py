@@ -16,6 +16,8 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from geocode_tools import reverse_geocode
 import pprint
+from langchain_community.tools import WikipediaQueryRun
+from langchain_community.utilities import WikipediaAPIWrapper
 
 RETRY_TIMEOUT = 15000 #15s
 
@@ -41,13 +43,17 @@ async def send_message(content: str) -> AsyncIterable[str]:
         streaming=True,
         verbose=True,
     )
-
-    tools = [reverse_geocode]
+    wikipedia = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())
+    tools = [reverse_geocode, wikipedia]
     prompt = ChatPromptTemplate.from_messages(
         [
             (
                 "system",
-                "Use the reverse_geocode tool to talk about the human given coordinates.",
+                """
+                You are an amazing tour guide that can give tours of any location in the world.
+                Use the reverse_geocode tool to get the locality, county, and state of my coordinates.
+                Use wikipedia tool to lookup each of these.  
+                """,
             ),
             ("placeholder", "{chat_history}"),
             ("human", "{input}"),
