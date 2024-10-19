@@ -1,5 +1,6 @@
 import asyncio
 import json
+from types import NoneType
 from typing import AsyncIterable
 
 
@@ -92,7 +93,7 @@ async def get_coords(request: Request):
     if client_host == "127.0.0.1":
         client_host = "172.56.168.91"
     g = geocoder.ip(client_host)
-    if len(g.latlng) == 0:
+    if isinstance(g, NoneType) or len(g.latlng) == 0:
         return {"error": "Could not get coordinates"}
     return {"lat": g.latlng[0], "lng": g.latlng[1]}
 
