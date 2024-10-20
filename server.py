@@ -37,12 +37,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class HistoryMessage(BaseModel):
+    content: str
+    role: str
 
 class Message(BaseModel):
     content: str
+    user_location: str
+    history: list[HistoryMessage]
 
 
-async def send_message(content: str) -> AsyncIterable[str]:
+async def send_message(content: str, user_location: str, history: list[HistoryMessage]) -> AsyncIterable[str]:
     model = ChatOpenAI(
         model="gpt-4o",
         streaming=True,
@@ -56,8 +61,10 @@ async def send_message(content: str) -> AsyncIterable[str]:
                 "system",
                 """
                 You are an amazing tour guide that can give tours of any location in the world.
-                Use the reverse_geocode tool to get the locality, county, and state of my coordinates.
-                Use wikipedia tool to lookup each of these.  
+                Use the reverse_geocode tool to get the locality, county, and state of the given coordinates.
+                Use wikipedia tool to lookup each of these. 
+                The user location is {user_location}.
+                Begin the tour by telling the user about the location they are in.
                 """,
             ),
             ("placeholder", "{chat_history}"),
@@ -69,10 +76,15 @@ async def send_message(content: str) -> AsyncIterable[str]:
     agent = create_tool_calling_agent(model, tools, prompt)
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
+    chat_history = []
+    for message in history:
+        chat_history.append((message.role, message.content))
+
+
     id = 0
-    async for chunk in agent_executor.astream_events({"input": content}, version="v1"):
-        print("------")
-        pprint.pprint(chunk, depth=3)
+    async for chunk in agent_executor.astream_events({"input": content, "user_location": user_location, "chat_history": chat_history}, version="v1"):
+        # print("------")
+        # pprint.pprint(chunk, depth=3)
         name = chunk["name"]
         data = chunk["data"]
         event = chunk["event"]
@@ -84,14 +96,14 @@ async def send_message(content: str) -> AsyncIterable[str]:
 
 @app.post("/stream/")
 async def stream_chat(message: Message):
-    generator = send_message(message.content)
+    generator = send_message(message.content, message.user_location, message.history)
     return EventSourceResponse(generator)
 
 @app.get("/ipcoords/")
 async def get_coords(request: Request):
     client_host = request.client.host
     if client_host == "127.0.0.1":
-        client_host = "172.56.168.91"
+        client_host = "172.56.168.99"
     g = geocoder.ip(client_host)
     if isinstance(g, NoneType) or len(g.latlng) == 0:
         return {"error": "Could not get coordinates"}
