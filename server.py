@@ -22,6 +22,7 @@ import pprint
 from langchain_community.tools import WikipediaQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
 import geocoder
+from map_tools import move_map
 
 
 RETRY_TIMEOUT = 15000 #15s
@@ -54,16 +55,18 @@ async def send_message(content: str, user_location: str, history: list[HistoryMe
         verbose=True,
     )
     wikipedia = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())
-    tools = [reverse_geocode, wikipedia]
+    tools = [reverse_geocode, wikipedia, move_map]
     prompt = ChatPromptTemplate.from_messages(
         [
             (
                 "system",
                 """
                 You are an amazing tour guide that can give tours of any location in the world.
+                The user can see a map and your chat dialog. 
                 Use the reverse_geocode tool to get the locality, county, and state of the given coordinates.
-                Use wikipedia tool to lookup each of these. 
-                The user location is {user_location}.
+                Use wikipedia tool to lookup each of these.
+                Use the move_map tool to move the users map to any coordinates.
+                The user location is {user_location}.  The map is currently centered here.
                 Begin the tour by telling the user about the location they are in.
                 """,
             ),
@@ -83,13 +86,17 @@ async def send_message(content: str, user_location: str, history: list[HistoryMe
 
     id = 0
     async for chunk in agent_executor.astream_events({"input": content, "user_location": user_location, "chat_history": chat_history}, version="v1"):
-        # print("------")
-        # pprint.pprint(chunk, depth=3)
         name = chunk["name"]
         data = chunk["data"]
         event = chunk["event"]
         if event == "on_chain_end" and name == "AgentExecutor":
             yield {"event": event,"id": id,"retry": RETRY_TIMEOUT,"data": data["output"]["output"]}
+            id += 1
+        elif event == "on_tool_start" and name == "move_map":       
+            # print("------")
+            # pprint.pprint(chunk, depth=3)
+            # print("------")
+            yield {"event": name, "id": id,"retry": RETRY_TIMEOUT,"data": data["input"]}
             id += 1
 
 
