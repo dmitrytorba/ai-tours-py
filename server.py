@@ -68,6 +68,7 @@ async def send_message(content: str, user_location: str, history: list[HistoryMe
                 Use the move_map tool to move the users map to any coordinates.
                 The user location is {user_location}.  The map is currently centered here.
                 Begin the tour by telling the user about the location they are in.
+                Dont tell the user their coordinates, keep it non-technical.
                 """,
             ),
             ("placeholder", "{chat_history}"),
@@ -93,15 +94,24 @@ async def send_message(content: str, user_location: str, history: list[HistoryMe
         if event == "on_chain_end" and name == "AgentExecutor":
             yield {"event": event,"id": id,"retry": RETRY_TIMEOUT,"data": data["output"]["output"]}
             id += 1
+        elif event == "on_chat_model_end":
+            gen = data["output"]['generations'][0][0]
+            chunk = gen["message"]
+            if chunk.content:
+                yield {"event": "chat_stop", "id": id,"retry": RETRY_TIMEOUT,"data": chunk.content}
+                id += 1
         elif event == "on_tool_start" and name == "move_map":    
             yield {"event": name, "id": id,"retry": RETRY_TIMEOUT,"data": data["input"]}
             id += 1
-        elif event == "on_chat_model_stream":   
+        elif event == "on_chat_model_stream":
             # print("------")
-            # pprint.pprint(chunk, depth=3)
-            # print("------")
-            yield {"event": "chat_stream", "id": id,"retry": RETRY_TIMEOUT,"data": data["chunk"].content}
-            id += 1
+            # pprint.pprint(data, depth=3)
+            # print("------")   
+            chunk = data["chunk"]
+            if chunk.content:
+                yield {"event": "chat_stream", "id": id,"retry": RETRY_TIMEOUT,"data": data["chunk"].content}
+                id += 1
+ 
 
 
 
