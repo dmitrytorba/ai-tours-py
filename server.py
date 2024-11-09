@@ -89,15 +89,20 @@ async def send_message(content: str, user_location: str, history: list[HistoryMe
         name = chunk["name"]
         data = chunk["data"]
         event = chunk["event"]
+        # print(event)
         if event == "on_chain_end" and name == "AgentExecutor":
             yield {"event": event,"id": id,"retry": RETRY_TIMEOUT,"data": data["output"]["output"]}
             id += 1
-        elif event == "on_tool_start" and name == "move_map":       
+        elif event == "on_tool_start" and name == "move_map":    
+            yield {"event": name, "id": id,"retry": RETRY_TIMEOUT,"data": data["input"]}
+            id += 1
+        elif event == "on_chat_model_stream":   
             # print("------")
             # pprint.pprint(chunk, depth=3)
             # print("------")
-            yield {"event": name, "id": id,"retry": RETRY_TIMEOUT,"data": data["input"]}
+            yield {"event": "chat_stream", "id": id,"retry": RETRY_TIMEOUT,"data": data["chunk"].content}
             id += 1
+
 
 
 
