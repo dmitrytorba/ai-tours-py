@@ -17,9 +17,10 @@ from langchain.schema import HumanMessage
 from pydantic import BaseModel
 from langchain.prompts import ChatPromptTemplate
 from langchain.agents import AgentExecutor, create_tool_calling_agent
-from geocode_tools import reverse_geocode
+from geocode_tools import nearby_places, reverse_geocode
 import pprint
 from langchain_community.tools import WikipediaQueryRun
+from langchain_community.tools import GooglePlacesTool
 from langchain_community.utilities import WikipediaAPIWrapper
 import geocoder
 from map_tools import move_map
@@ -55,7 +56,8 @@ async def send_message(content: str, user_location: str, history: list[HistoryMe
         verbose=True,
     )
     wikipedia = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())
-    tools = [reverse_geocode, wikipedia, move_map]
+
+    tools = [reverse_geocode, wikipedia, move_map, nearby_places]
     prompt = ChatPromptTemplate.from_messages(
         [
             (
@@ -65,6 +67,7 @@ async def send_message(content: str, user_location: str, history: list[HistoryMe
                 The user can see a map and your chat dialog. 
                 Use the reverse_geocode tool to get the locality, county, and state of the given coordinates.
                 Use wikipedia tool to lookup each of these.
+                Use the nearby_places tool to find places around a coorinate.
                 Use the move_map tool to move the users map to any coordinates.
                 The user location is {user_location}.  The map is currently centered here.
                 Begin the tour by telling the user about the location they are in.
