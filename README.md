@@ -1,5 +1,7 @@
 # ai-tours-py
 
+AI tours backend.
+
 ## Develop
 
 Setup

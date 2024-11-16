@@ -66,8 +66,8 @@ async def send_message(content: str, user_location: str, history: list[HistoryMe
                 You are an amazing tour guide that can give tours of any location in the world.
                 The user can see a map and your chat dialog. 
                 Use the reverse_geocode tool to get the locality, county, and state of the given coordinates.
-                Use wikipedia tool to lookup each of these.
-                Use the nearby_places tool to find places around a coorinate.
+                Use wikipedia tool to lookup each of these. Wikipedia should be your main source of information.
+                Use the nearby_places tool to find places when a user asks for it.
                 Use the move_map tool to move the users map to any coordinates.
                 The user location is {user_location}.  The map is currently centered here.
                 Begin the tour by telling the user about the location they are in.
