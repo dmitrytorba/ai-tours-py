@@ -1,3 +1,4 @@
+import pprint
 from langchain_core.tools import tool
 from dotenv import load_dotenv
 import os
@@ -10,8 +11,9 @@ load_dotenv()
 @tool
 def reverse_geocode(latlng: Annotated[str, "comma seperated latitude and logitude"]) -> any:
     """Get the address and other geographical information of a given latitude and longitude"""
-    r = requests.get('https://maps.googleapis.com/maps/api/geocode/json?latlng={}&key={}'.format(latlng, os.environ["GOOGLE_API_KEY"]))
+    r = requests.get('https://maps.googleapis.com/maps/api/geocode/json?latlng={}&extra_computations=ADDRESS_DESCRIPTORS&key={}'.format(latlng, os.environ["GOOGLE_API_KEY"]))
     locations = r.json()
+    pprint.pprint(locations['address_descriptor'], depth=5)
     return locations
 
 
