@@ -1,6 +1,8 @@
 # ai-tours-py
 
-AI tours backend.
+This is the AI tours backend.
+
+Frontend is located here: https://github.com/dmitrytorba/ai-tours-react
 
 ## Develop
 
